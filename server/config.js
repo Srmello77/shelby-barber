@@ -1,14 +1,18 @@
 // Horário de funcionamento da barbearia.
 // 0 = Domingo, 1 = Segunda, ... 6 = Sábado (mesmo padrão do Date.getDay()).
-// Use "null" para dia fechado.
+// Cada dia é uma lista de turnos ({ open, close }) — permite dias com mais de
+// um turno (ex: sábado). Use "null" para dia fechado.
 const SHOP_HOURS = {
-  0: null,
-  1: null,
-  2: { open: '09:00', close: '19:00' },
-  3: { open: '09:00', close: '19:00' },
-  4: { open: '09:00', close: '19:00' },
-  5: { open: '09:00', close: '19:00' },
-  6: { open: '09:00', close: '18:00' },
+  0: null, // domingo — fechado
+  1: [{ open: '14:15', close: '23:00' }], // segunda
+  2: [{ open: '14:15', close: '23:00' }], // terça
+  3: [{ open: '14:15', close: '23:00' }], // quarta
+  4: [{ open: '14:15', close: '23:00' }], // quinta
+  5: null, // sexta — fechado
+  6: [
+    { open: '09:30', close: '11:45' },
+    { open: '14:15', close: '23:00' },
+  ], // sábado
 };
 
 // Intervalo entre horários disponíveis, em minutos.

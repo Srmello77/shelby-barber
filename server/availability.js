@@ -20,22 +20,24 @@ function parseLocalDate(dateStr) {
 
 function getAvailableSlots({ date, durationMin, busyRanges, now = new Date() }) {
   const dayOfWeek = parseLocalDate(date).getDay();
-  const hours = SHOP_HOURS[dayOfWeek];
-  if (!hours) return [];
-
-  const openMin = toMinutes(hours.open);
-  const closeMin = toMinutes(hours.close);
+  const shifts = SHOP_HOURS[dayOfWeek];
+  if (!shifts) return [];
 
   const isToday = date === formatDate(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   const slots = [];
-  for (let start = openMin; start + durationMin <= closeMin; start += SLOT_STEP_MIN) {
-    if (isToday && start <= nowMin) continue;
+  for (const shift of shifts) {
+    const openMin = toMinutes(shift.open);
+    const closeMin = toMinutes(shift.close);
 
-    const end = start + durationMin;
-    const overlaps = busyRanges.some((range) => start < range.end && end > range.start);
-    if (!overlaps) slots.push(toHHMM(start));
+    for (let start = openMin; start + durationMin <= closeMin; start += SLOT_STEP_MIN) {
+      if (isToday && start <= nowMin) continue;
+
+      const end = start + durationMin;
+      const overlaps = busyRanges.some((range) => start < range.end && end > range.start);
+      if (!overlaps) slots.push(toHHMM(start));
+    }
   }
 
   return slots;

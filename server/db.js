@@ -60,17 +60,25 @@ if (barberCount === 0) {
   insertBarber.run('Shelby', '1234');
 }
 
-const serviceCount = db.prepare('SELECT COUNT(*) AS n FROM services').get().n;
-if (serviceCount === 0) {
+// Catálogo de serviços atual (2026-08-06). Se ainda não estiver aplicado,
+// desativa os serviços antigos (sem apagar — preserva o histórico de
+// agendamentos que os referenciam) e insere o catálogo novo.
+const hasCurrentCatalog = db
+  .prepare("SELECT 1 FROM services WHERE name = 'Corte' AND duration_min = 45 AND price_cents = 3000")
+  .get();
+if (!hasCurrentCatalog) {
+  db.prepare('UPDATE services SET active = 0').run();
   const insertService = db.prepare(
     'INSERT INTO services (name, duration_min, price_cents) VALUES (?, ?, ?)'
   );
-  insertService.run('Corte Básico', 30, 3000);
-  insertService.run('Corte Degrade', 45, 3500);
-  insertService.run('Sobrancelha', 20, 2000);
-  insertService.run('Barba', 30, 3000);
-  insertService.run('Combo 1 (Corte Degrade + Barba)', 80, 5500);
-  insertService.run('Combo 2 (Corte Degrade + Barba + Sobrancelha)', 90, 7500);
+  insertService.run('Corte', 45, 3000);
+  insertService.run('Sobrancelha', 15, 500);
+  insertService.run('Barba', 30, 2000);
+  insertService.run('Pigmentação', 10, 1500);
+  insertService.run('Pigmentação na Barba', 10, 1000);
+  insertService.run('Alisamento Americano', 30, 5000);
+  insertService.run('Luzes', 210, 13000);
+  insertService.run('Nevou', 210, 16000);
 }
 
 module.exports = db;
