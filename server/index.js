@@ -32,15 +32,31 @@ app.get('/api/shop-hours', (req, res) => {
   res.json({ hours: SHOP_HOURS, bookingWindowDays: BOOKING_WINDOW_DAYS });
 });
 
+function getServicesByIds(serviceIds) {
+  if (!Array.isArray(serviceIds) || serviceIds.length === 0) return [];
+  const placeholders = serviceIds.map(() => '?').join(',');
+  return db
+    .prepare(`SELECT * FROM services WHERE id IN (${placeholders}) AND active = 1`)
+    .all(...serviceIds);
+}
+
 // ---------- Disponibilidade ----------
 app.get('/api/availability', (req, res) => {
-  const { barberId, date, serviceId } = req.query;
-  if (!barberId || !date || !serviceId) {
-    return res.status(400).json({ error: 'barberId, date e serviceId são obrigatórios' });
+  const { barberId, date, serviceIds } = req.query;
+  if (!barberId || !date || !serviceIds) {
+    return res.status(400).json({ error: 'barberId, date e serviceIds são obrigatórios' });
   }
 
-  const service = db.prepare('SELECT * FROM services WHERE id = ?').get(serviceId);
-  if (!service) return res.status(404).json({ error: 'Serviço não encontrado' });
+  const ids = String(serviceIds)
+    .split(',')
+    .map((id) => Number(id.trim()))
+    .filter(Boolean);
+  const services = getServicesByIds(ids);
+  if (services.length !== ids.length) {
+    return res.status(404).json({ error: 'Um ou mais serviços não foram encontrados' });
+  }
+
+  const totalDuration = services.reduce((sum, s) => sum + s.duration_min, 0);
 
   const appointments = db
     .prepare(
@@ -59,7 +75,7 @@ app.get('/api/availability', (req, res) => {
 
   const slots = getAvailableSlots({
     date,
-    durationMin: service.duration_min,
+    durationMin: totalDuration,
     busyRanges,
   });
 
@@ -68,20 +84,34 @@ app.get('/api/availability', (req, res) => {
 
 // ---------- Criar agendamento ----------
 app.post('/api/appointments', (req, res) => {
-  const { barberId, serviceId, date, startTime, clientName, clientPhone } = req.body || {};
+  const { barberId, serviceIds, date, startTime, clientName, clientPhone } = req.body || {};
 
-  if (!barberId || !serviceId || !date || !startTime || !clientName || !clientPhone) {
-    return res.status(400).json({ error: 'Preencha todos os campos' });
+  if (
+    !barberId ||
+    !Array.isArray(serviceIds) ||
+    serviceIds.length === 0 ||
+    !date ||
+    !startTime ||
+    !clientName ||
+    !clientPhone
+  ) {
+    return res.status(400).json({ error: 'Preencha todos os campos e escolha pelo menos um serviço' });
   }
 
   const barber = db.prepare('SELECT * FROM barbers WHERE id = ? AND active = 1').get(barberId);
   if (!barber) return res.status(404).json({ error: 'Barbeiro não encontrado' });
 
-  const service = db.prepare('SELECT * FROM services WHERE id = ? AND active = 1').get(serviceId);
-  if (!service) return res.status(404).json({ error: 'Serviço não encontrado' });
+  const services = getServicesByIds(serviceIds);
+  if (services.length !== serviceIds.length) {
+    return res.status(404).json({ error: 'Um ou mais serviços não foram encontrados' });
+  }
+
+  const totalDuration = services.reduce((sum, s) => sum + s.duration_min, 0);
+  const totalPrice = services.reduce((sum, s) => sum + s.price_cents, 0);
+  const serviceNames = services.map((s) => s.name).join(', ');
 
   const startMin = toMinutes(startTime);
-  const endMin = startMin + service.duration_min;
+  const endMin = startMin + totalDuration;
   const endTime = `${Math.floor(endMin / 60)
     .toString()
     .padStart(2, '0')}:${(endMin % 60).toString().padStart(2, '0')}`;
@@ -112,14 +142,29 @@ app.post('/api/appointments', (req, res) => {
   } while (db.prepare('SELECT 1 FROM appointments WHERE code = ?').get(code));
 
   db.prepare(
-    `INSERT INTO appointments (code, barber_id, service_id, date, start_time, end_time, client_name, client_phone)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(code, barberId, serviceId, date, startTime, endTime, clientName, clientPhone);
+    `INSERT INTO appointments
+       (code, barber_id, service_id, service_ids, service_names, total_price_cents, total_duration_min,
+        date, start_time, end_time, client_name, client_phone)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    code,
+    barberId,
+    serviceIds[0],
+    JSON.stringify(serviceIds),
+    serviceNames,
+    totalPrice,
+    totalDuration,
+    date,
+    startTime,
+    endTime,
+    clientName,
+    clientPhone
+  );
 
   res.status(201).json({
     code,
     barber: barber.name,
-    service: service.name,
+    service: serviceNames,
     date,
     startTime,
     endTime,
@@ -131,10 +176,10 @@ app.get('/api/appointments/:code', (req, res) => {
   const appt = db
     .prepare(
       `SELECT a.code, a.date, a.start_time, a.end_time, a.status, a.client_name,
-              b.name AS barber_name, s.name AS service_name, s.price_cents
+              a.service_names, a.total_price_cents,
+              b.name AS barber_name
        FROM appointments a
        JOIN barbers b ON b.id = a.barber_id
-       JOIN services s ON s.id = a.service_id
        WHERE a.code = ?`
     )
     .get(req.params.code.toUpperCase());
@@ -187,9 +232,8 @@ app.get('/api/barber/:barberId/appointments', (req, res) => {
   const appts = db
     .prepare(
       `SELECT a.id, a.code, a.start_time, a.end_time, a.status, a.client_name, a.client_phone,
-              s.name AS service_name, s.price_cents
+              a.service_names, a.total_price_cents
        FROM appointments a
-       JOIN services s ON s.id = a.service_id
        WHERE a.barber_id = ? AND a.date = ?
        ORDER BY a.start_time`
     )

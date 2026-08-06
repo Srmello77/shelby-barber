@@ -81,4 +81,31 @@ if (!hasCurrentCatalog) {
   insertService.run('Nevou', 210, 16000);
 }
 
+// Migração multi-serviço (2026-08-06): um agendamento pode ter mais de um
+// serviço, com duração e preço somados. Guarda um "retrato" (snapshot) do
+// nome/preço/duração de cada serviço no momento do agendamento, pra não
+// depender de o catálogo continuar igual no futuro.
+const hasMultiService = db
+  .prepare("SELECT 1 FROM pragma_table_info('appointments') WHERE name = 'service_ids'")
+  .get();
+if (!hasMultiService) {
+  db.exec(`
+    ALTER TABLE appointments ADD COLUMN service_ids TEXT;
+    ALTER TABLE appointments ADD COLUMN service_names TEXT;
+    ALTER TABLE appointments ADD COLUMN total_price_cents INTEGER;
+    ALTER TABLE appointments ADD COLUMN total_duration_min INTEGER;
+  `);
+
+  const getService = db.prepare('SELECT name, price_cents, duration_min FROM services WHERE id = ?');
+  const updateAppt = db.prepare(
+    'UPDATE appointments SET service_ids = ?, service_names = ?, total_price_cents = ?, total_duration_min = ? WHERE id = ?'
+  );
+  for (const row of db.prepare('SELECT id, service_id FROM appointments').all()) {
+    const s = getService.get(row.service_id);
+    if (s) {
+      updateAppt.run(JSON.stringify([row.service_id]), s.name, s.price_cents, s.duration_min, row.id);
+    }
+  }
+}
+
 module.exports = db;

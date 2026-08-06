@@ -103,7 +103,7 @@ async function loadAppointments() {
         <div class="appt-row">
           <span class="appt-time">${item.start_time}</span>
           <span class="appt-info">
-            <strong>${item.client_name}</strong> — ${item.service_name} (${money(item.price_cents)})<br>
+            <strong>${item.client_name}</strong> — ${item.service_names} (${money(item.total_price_cents)})<br>
             <span class="muted">${item.client_phone}</span>
             <span class="status-badge status-${item.status}">${item.status}</span>
           </span>

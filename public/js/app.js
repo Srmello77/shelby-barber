@@ -1,9 +1,10 @@
 const state = {
-  service: null,
+  selectedServices: [],
+  serviceStepDone: false,
   barber: null,
   date: null,
   time: null,
-  services: [],
+  allServices: [],
   barbers: [],
   singleBarber: false,
 };
@@ -19,6 +20,14 @@ function formatDuration(min) {
   const hours = Math.floor(min / 60);
   const rest = min % 60;
   return rest === 0 ? `${hours}h` : `${hours}h${String(rest).padStart(2, '0')}`;
+}
+
+function totalDuration() {
+  return state.selectedServices.reduce((sum, s) => sum + s.duration_min, 0);
+}
+
+function totalPrice() {
+  return state.selectedServices.reduce((sum, s) => sum + s.price_cents, 0);
 }
 
 function renderStepIndicator() {
@@ -39,7 +48,7 @@ function renderStepIndicator() {
 }
 
 function currentVisibleStep() {
-  if (!state.service) return 'service';
+  if (!state.serviceStepDone) return 'service';
   if (!state.barber) return 'barber';
   if (!state.date) return 'date';
   if (!state.time) return 'time';
@@ -47,11 +56,12 @@ function currentVisibleStep() {
 }
 
 function showStep() {
-  const step = currentVisibleStep();
+  const pastBarberStep = state.singleBarber ? state.serviceStepDone : !!state.barber;
+
   document.getElementById('step-service').style.display = 'block';
   document.getElementById('step-barber').style.display =
-    !state.singleBarber && state.service ? 'block' : 'none';
-  document.getElementById('step-date').style.display = state.barber ? 'block' : 'none';
+    !state.singleBarber && state.serviceStepDone ? 'block' : 'none';
+  document.getElementById('step-date').style.display = pastBarberStep ? 'block' : 'none';
   document.getElementById('step-time').style.display = state.date ? 'block' : 'none';
   document.getElementById('step-contact').style.display = state.time ? 'block' : 'none';
 
@@ -63,12 +73,27 @@ function showStep() {
   renderStepIndicator();
 }
 
+function updateServiceSummary() {
+  const summaryEl = document.getElementById('serviceSummary');
+  const continueBtn = document.getElementById('continueServiceBtn');
+
+  if (state.selectedServices.length === 0) {
+    summaryEl.textContent = '';
+    continueBtn.disabled = true;
+    return;
+  }
+
+  const names = state.selectedServices.map((s) => s.name).join(' + ');
+  summaryEl.textContent = `${names} — ${formatDuration(totalDuration())} · ${money(totalPrice())}`;
+  continueBtn.disabled = false;
+}
+
 async function init() {
   const [services, barbers] = await Promise.all([
     fetch('/api/services').then((r) => r.json()),
     fetch('/api/barbers').then((r) => r.json()),
   ]);
-  state.services = services;
+  state.allServices = services;
   state.barbers = barbers;
   state.singleBarber = barbers.length === 1;
   if (state.singleBarber) state.barber = barbers[0];
@@ -97,9 +122,31 @@ async function init() {
   document.getElementById('serviceOptions').addEventListener('click', (e) => {
     const btn = e.target.closest('.option-btn');
     if (!btn) return;
-    state.service = services.find((s) => s.id == btn.dataset.id);
-    markSelected('serviceOptions', btn);
-    resetFrom('barber');
+    const service = services.find((s) => s.id == btn.dataset.id);
+
+    const idx = state.selectedServices.findIndex((s) => s.id === service.id);
+    if (idx >= 0) {
+      state.selectedServices.splice(idx, 1);
+      btn.classList.remove('selected');
+    } else {
+      state.selectedServices.push(service);
+      btn.classList.add('selected');
+    }
+
+    updateServiceSummary();
+
+    // Se o cliente já tinha avançado e volta a mexer nos serviços, refaz o
+    // fluxo a partir da data (duração pode ter mudado).
+    if (state.serviceStepDone) {
+      state.serviceStepDone = false;
+      resetFrom('barber');
+      showStep();
+    }
+  });
+
+  document.getElementById('continueServiceBtn').addEventListener('click', () => {
+    if (state.selectedServices.length === 0) return;
+    state.serviceStepDone = true;
     showStep();
   });
 
@@ -144,7 +191,7 @@ async function loadSlots() {
   const params = new URLSearchParams({
     barberId: state.barber.id,
     date: state.date,
-    serviceId: state.service.id,
+    serviceIds: state.selectedServices.map((s) => s.id).join(','),
   });
   const { slots } = await fetch(`/api/availability?${params}`).then((r) => r.json());
 
@@ -186,7 +233,7 @@ async function submitBooking() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         barberId: state.barber.id,
-        serviceId: state.service.id,
+        serviceIds: state.selectedServices.map((s) => s.id),
         date: state.date,
         startTime: state.time,
         clientName: name,
@@ -242,8 +289,8 @@ async function lookupAppointment() {
   const statusClass = `status-${data.status}`;
   resultEl.innerHTML = `
     <div style="margin-top:14px">
-      <p><strong>${data.service_name}</strong> com ${data.barber_name}</p>
-      <p class="muted">${formatDatePt(data.date)} às ${data.start_time}</p>
+      <p><strong>${data.service_names}</strong> com ${data.barber_name}</p>
+      <p class="muted">${formatDatePt(data.date)} às ${data.start_time} · ${money(data.total_price_cents)}</p>
       <span class="status-badge ${statusClass}">${data.status}</span>
       ${
         data.status === 'confirmado'
