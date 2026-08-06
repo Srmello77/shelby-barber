@@ -13,36 +13,6 @@ function generateCode() {
   return crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
 }
 
-// TEMPORÁRIO — diagnóstico de persistência do volume. Remover depois.
-app.get('/api/_debug/db', (req, res) => {
-  const fs = require('fs');
-  let fileStats = null;
-  try {
-    const st = fs.statSync(db.dbPath);
-    fileStats = { size: st.size, createdAt: st.birthtime, modifiedAt: st.mtime };
-  } catch (e) {
-    fileStats = { error: e.message };
-  }
-
-  let dataDir = null;
-  try {
-    dataDir = { exists: fs.existsSync('/data'), contents: fs.existsSync('/data') ? fs.readdirSync('/data') : null };
-    if (dataDir.exists) {
-      fs.writeFileSync('/data/_write_test.txt', new Date().toISOString());
-      dataDir.writable = true;
-    }
-  } catch (e) {
-    dataDir = { ...dataDir, writable: false, error: e.message };
-  }
-
-  res.json({
-    DB_PATH_env: process.env.DB_PATH || null,
-    resolvedDbPath: db.dbPath,
-    fileStats,
-    dataDir,
-  });
-});
-
 // ---------- Serviços ----------
 app.get('/api/services', (req, res) => {
   const services = db
