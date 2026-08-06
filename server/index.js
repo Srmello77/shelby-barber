@@ -13,6 +13,23 @@ function generateCode() {
   return crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
 }
 
+// TEMPORÁRIO — diagnóstico de persistência do volume. Remover depois.
+app.get('/api/_debug/db', (req, res) => {
+  const fs = require('fs');
+  let fileStats = null;
+  try {
+    const st = fs.statSync(db.dbPath);
+    fileStats = { size: st.size, createdAt: st.birthtime, modifiedAt: st.mtime };
+  } catch (e) {
+    fileStats = { error: e.message };
+  }
+  res.json({
+    DB_PATH_env: process.env.DB_PATH || null,
+    resolvedDbPath: db.dbPath,
+    fileStats,
+  });
+});
+
 // ---------- Serviços ----------
 app.get('/api/services', (req, res) => {
   const services = db
