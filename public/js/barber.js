@@ -19,6 +19,7 @@ async function init() {
   document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('panelDate').addEventListener('change', loadAppointments);
   document.getElementById('addBlockBtn').addEventListener('click', addBlock);
+  document.getElementById('changePinBtn').addEventListener('click', changePin);
 
   const dateInput = document.getElementById('panelDate');
   dateInput.value = new Date().toISOString().slice(0, 10);
@@ -176,6 +177,40 @@ async function addBlock() {
 async function removeBlock(id) {
   await fetch(`/api/barber/blocks/${id}`, { method: 'DELETE' });
   loadAppointments();
+}
+
+async function changePin() {
+  const currentPin = document.getElementById('currentPinInput').value.trim();
+  const newPin = document.getElementById('newPinInput').value.trim();
+  const confirmPin = document.getElementById('confirmPinInput').value.trim();
+  const msgEl = document.getElementById('changePinMsg');
+  msgEl.innerHTML = '';
+
+  if (!currentPin || !newPin || !confirmPin) {
+    msgEl.innerHTML = '<div class="error-msg">Preencha todos os campos.</div>';
+    return;
+  }
+  if (newPin !== confirmPin) {
+    msgEl.innerHTML = '<div class="error-msg">Os novos PINs não coincidem.</div>';
+    return;
+  }
+
+  const res = await fetch('/api/barber/change-pin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ barberId: currentBarber.id, currentPin, newPin }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    msgEl.innerHTML = `<div class="error-msg">${data.error}</div>`;
+    return;
+  }
+
+  msgEl.innerHTML = '<p class="muted" style="color:var(--success)">PIN alterado com sucesso.</p>';
+  document.getElementById('currentPinInput').value = '';
+  document.getElementById('newPinInput').value = '';
+  document.getElementById('confirmPinInput').value = '';
 }
 
 init();

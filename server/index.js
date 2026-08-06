@@ -164,6 +164,21 @@ app.post('/api/barber/login', (req, res) => {
   res.json({ id: barber.id, name: barber.name });
 });
 
+app.post('/api/barber/change-pin', (req, res) => {
+  const { barberId, currentPin, newPin } = req.body || {};
+  if (!newPin || !/^\d{4,6}$/.test(String(newPin))) {
+    return res.status(400).json({ error: 'O novo PIN deve ter de 4 a 6 números' });
+  }
+
+  const barber = db.prepare('SELECT * FROM barbers WHERE id = ? AND active = 1').get(barberId);
+  if (!barber || barber.pin !== String(currentPin || '')) {
+    return res.status(401).json({ error: 'PIN atual incorreto' });
+  }
+
+  db.prepare('UPDATE barbers SET pin = ? WHERE id = ?').run(String(newPin), barberId);
+  res.json({ ok: true });
+});
+
 app.get('/api/barber/:barberId/appointments', (req, res) => {
   const { date } = req.query;
   const { barberId } = req.params;
