@@ -1,0 +1,26 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="200" cy="200" r="180" fill="#0a0a0f" stroke="url(#ringGrad)" stroke-width="6" filter="url(#glow)"/>
+  <circle cx="200" cy="200" r="155" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.6"/>
+
+  <text x="200" y="205" text-anchor="middle" font-family="Brush Script MT, cursive" font-size="72" fill="#ffffff" filter="url(#glow)">Shelby</text>
+  <text x="200" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" letter-spacing="6" fill="#ec4899" font-weight="bold">BARBER</text>
+
+  <g stroke="#e9d5ff" stroke-width="3" fill="none" opacity="0.9">
+    <path d="M140 285 L160 265 M160 285 L140 265" stroke-linecap="round"/>
+    <path d="M240 285 L260 265 M260 285 L240 265" stroke-linecap="round"/>
+  </g>
+</svg>

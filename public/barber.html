@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shelby Barber — Painel do Barbeiro</title>
+<link rel="icon" href="/assets/logo.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <img src="/assets/logo.png" alt="Shelby Barber">
+    <h1>Painel do Barbeiro</h1>
+  </header>
+
+  <!-- Login -->
+  <div class="card" id="loginCard">
+    <h2>Entrar</h2>
+    <label for="barberSelect">Barbeiro</label>
+    <select id="barberSelect"></select>
+    <label for="pinInput">PIN</label>
+    <input type="password" id="pinInput" placeholder="****" inputmode="numeric">
+    <div id="loginError"></div>
+    <button class="btn-primary" id="loginBtn">Entrar</button>
+  </div>
+
+  <!-- Painel -->
+  <div id="panel" style="display:none">
+    <div class="top-nav">
+      <span class="muted" id="welcomeMsg"></span>
+      <button class="btn-small" id="logoutBtn">Sair</button>
+    </div>
+
+    <div class="card">
+      <h2>Agenda do dia</h2>
+      <input type="date" id="panelDate">
+      <div id="apptList" style="margin-top:14px"></div>
+      <p class="muted" id="emptyMsg" style="display:none">Nenhum horário marcado nesse dia.</p>
+    </div>
+
+    <div class="card">
+      <h2>Bloquear horário</h2>
+      <label for="blockStart">Início</label>
+      <input type="time" id="blockStart">
+      <label for="blockEnd">Fim</label>
+      <input type="time" id="blockEnd">
+      <label for="blockReason">Motivo (opcional)</label>
+      <input type="text" id="blockReason" placeholder="Ex: Almoço">
+      <button class="btn-secondary" id="addBlockBtn">Bloquear</button>
+      <div id="blockError"></div>
+    </div>
+  </div>
+
+  <p class="center" style="margin-top:24px">
+    <a class="link" href="/index.html">&larr; Voltar ao agendamento</a>
+  </p>
+</div>
+
+<script src="/js/barber.js"></script>
+</body>
+</html>

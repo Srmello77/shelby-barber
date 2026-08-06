@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shelby Barber — Agendamento</title>
+<link rel="icon" href="/assets/logo.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <img src="/assets/logo.png" alt="Shelby Barber">
+    <h1>Agendar horário</h1>
+  </header>
+
+  <div class="step-indicator" id="stepIndicator"></div>
+
+  <!-- Passo 1: Serviço -->
+  <div class="card" id="step-service">
+    <h2>1. Escolha o serviço</h2>
+    <div class="options" id="serviceOptions"></div>
+  </div>
+
+  <!-- Passo 2: Barbeiro -->
+  <div class="card" id="step-barber" style="display:none">
+    <h2>2. Escolha o barbeiro</h2>
+    <div class="options" id="barberOptions"></div>
+  </div>
+
+  <!-- Passo 3: Data -->
+  <div class="card" id="step-date" style="display:none">
+    <h2 id="dateStepTitle">3. Escolha a data</h2>
+    <input type="date" id="dateInput">
+  </div>
+
+  <!-- Passo 4: Horário -->
+  <div class="card" id="step-time" style="display:none">
+    <h2 id="timeStepTitle">4. Escolha o horário</h2>
+    <div class="slots-grid" id="slotsGrid"></div>
+    <p class="muted" id="noSlotsMsg" style="display:none">Nenhum horário disponível nesse dia. Tente outra data.</p>
+  </div>
+
+  <!-- Passo 5: Dados -->
+  <div class="card" id="step-contact" style="display:none">
+    <h2 id="contactStepTitle">5. Seus dados</h2>
+    <label for="clientName">Nome completo</label>
+    <input type="text" id="clientName" placeholder="Seu nome">
+    <label for="clientPhone">WhatsApp / Telefone</label>
+    <input type="tel" id="clientPhone" placeholder="(00) 00000-0000">
+    <div id="formError"></div>
+    <button class="btn-primary" id="confirmBtn">Confirmar agendamento</button>
+  </div>
+
+  <!-- Confirmação -->
+  <div class="card confirmation" id="step-done" style="display:none">
+    <h2 class="center">Agendamento confirmado!</h2>
+    <p class="muted">Guarde seu código para consultar ou cancelar depois</p>
+    <div class="code" id="confirmCode"></div>
+    <p id="confirmDetails" class="muted"></p>
+    <button class="btn-secondary" onclick="location.reload()">Fazer novo agendamento</button>
+  </div>
+
+  <div class="card" id="lookupCard">
+    <h2>Já tem um agendamento?</h2>
+    <label for="lookupCode">Código do agendamento</label>
+    <input type="text" id="lookupCode" placeholder="Ex: A1B2C3" style="text-transform:uppercase">
+    <button class="btn-secondary" id="lookupBtn">Consultar / Cancelar</button>
+    <div id="lookupResult"></div>
+  </div>
+
+  <p class="center" style="margin-top:24px">
+    <a class="link" href="/barber.html">Área do barbeiro</a>
+  </p>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
