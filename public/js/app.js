@@ -14,6 +14,13 @@ function money(cents) {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function formatDuration(min) {
+  if (min < 60) return `${min} min`;
+  const hours = Math.floor(min / 60);
+  const rest = min % 60;
+  return rest === 0 ? `${hours}h` : `${hours}h${String(rest).padStart(2, '0')}`;
+}
+
 function renderStepIndicator() {
   const indicatorSteps = state.singleBarber
     ? ['service', 'date', 'time', 'contact']
@@ -70,7 +77,7 @@ async function init() {
     .map(
       (s) => `
       <button class="option-btn" data-id="${s.id}">
-        <span>${s.name}<small>${s.duration_min} min</small></span>
+        <span>${s.name}<small>${formatDuration(s.duration_min)}</small></span>
         <span class="price">${money(s.price_cents)}</span>
       </button>`
     )
