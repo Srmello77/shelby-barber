@@ -23,10 +23,23 @@ app.get('/api/_debug/db', (req, res) => {
   } catch (e) {
     fileStats = { error: e.message };
   }
+
+  let dataDir = null;
+  try {
+    dataDir = { exists: fs.existsSync('/data'), contents: fs.existsSync('/data') ? fs.readdirSync('/data') : null };
+    if (dataDir.exists) {
+      fs.writeFileSync('/data/_write_test.txt', new Date().toISOString());
+      dataDir.writable = true;
+    }
+  } catch (e) {
+    dataDir = { ...dataDir, writable: false, error: e.message };
+  }
+
   res.json({
     DB_PATH_env: process.env.DB_PATH || null,
     resolvedDbPath: db.dbPath,
     fileStats,
+    dataDir,
   });
 });
 
