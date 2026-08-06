@@ -42,18 +42,43 @@ Para parar o servidor, feche o terminal ou pressione `Ctrl + C`.
 6. Recebe um **código de 6 dígitos** — pode usá-lo depois na própria página para consultar ou cancelar o agendamento
 
 ### Barbeiro
-- Login por **nome + PIN** (PIN padrão: `1234` para todos — troque isso, veja abaixo)
+- Login por **nome + PIN** (PIN padrão: `1234` — troque isso, veja abaixo)
 - Vê a agenda do dia selecionado
 - Marca atendimentos como **concluído** ou **cancelado**
 - Pode **bloquear horários** (ex: almoço, folga)
 
-## Personalizar
+## Colocar o app online (deploy)
 
-### Trocar a logo
-Hoje o app usa uma logo placeholder em `public/assets/logo.svg` (inspirada na sua logo, mas recriada em SVG).
-Para usar a imagem real:
-1. Salve o arquivo da logo original como `public/assets/logo.png`
-2. Nos arquivos `public/index.html` e `public/barber.html`, troque as referências de `/assets/logo.svg` para `/assets/logo.png`
+Enquanto o app só roda em `localhost`, ninguém fora do seu computador consegue acessá-lo. Para o barbeiro usar
+na loja e os clientes dele agendarem pelo celular, o app precisa estar hospedado num serviço na nuvem.
+
+Recomendação: **Railway** (https://railway.com). É simples de configurar, funciona bem com Node.js + SQLite
+(desde que se use um volume persistente, veja abaixo) e tem um plano de entrada barato.
+
+### Passo a passo
+
+1. **Criar um repositório no GitHub** e subir o código deste projeto para lá (o projeto já está preparado com
+   `git init` e o primeiro commit feito — falta só criar o repositório vazio no GitHub e rodar):
+   ```bash
+   git remote add origin https://github.com/SEU_USUARIO/shelby-barber.git
+   git branch -M main
+   git push -u origin main
+   ```
+2. Crie uma conta na Railway (pode entrar direto com sua conta do GitHub)
+3. No painel da Railway, clique em **New Project → Deploy from GitHub repo** e escolha o repositório `shelby-barber`
+4. A Railway detecta automaticamente que é um projeto Node.js (lê o `package.json`) e já roda `npm install` + `npm start`
+5. **Adicione um volume persistente** (essencial — sem isso, o banco de dados é apagado a cada novo deploy):
+   - Na aba do serviço, vá em **Settings → Volumes → New Volume**
+   - Monte o volume no caminho `/data`
+6. **Configure a variável de ambiente** `DB_PATH` apontando para dentro do volume:
+   - Aba **Variables** → adicionar `DB_PATH` = `/data/shelby.sqlite`
+7. Clique em **Deploy**. Quando terminar, a Railway mostra uma URL pública (algo como
+   `https://shelby-barber-production.up.railway.app`) — essa é a URL que você compartilha com o barbeiro e os clientes
+8. (Opcional) Em **Settings → Domains**, dá para ligar um domínio próprio (ex: `agendar.shelbybarber.com.br`) a essa URL
+
+Depois do primeiro deploy, qualquer novo `git push` para o repositório atualiza o app automaticamente.
+
+⚠️ O PIN padrão do barbeiro é `1234` — depois do deploy, troque isso direto no banco de produção antes de divulgar a URL.
 
 ### Barbeiros e PINs
 Edite a tabela `barbers` no banco (`server/db/shelby.sqlite`) ou apague o arquivo do banco e ajuste os valores
@@ -84,8 +109,11 @@ ShelbyBarber/
     ├── css/style.css
     ├── js/app.js           # lógica da página do cliente
     ├── js/barber.js         # lógica do painel do barbeiro
-    └── assets/logo.svg      # logo (placeholder)
+    └── assets/logo.png      # logo da Shelby Barber
 ```
+
+`DB_PATH` (variável de ambiente) define onde o arquivo do banco fica salvo — em produção (Railway) deve apontar
+para dentro do volume persistente (`/data/shelby.sqlite`); localmente, se não for definida, usa `server/db/shelby.sqlite`.
 
 ## Limitações desta primeira versão
 
